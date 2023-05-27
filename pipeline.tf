@@ -1,6 +1,6 @@
 # Criação da pipeline do CodePipeline
 resource "aws_codepipeline" "pipeline" {
-  name     = "my-pipeline"
+  name     = "my-pipeline1"
   role_arn = aws_iam_role.codepipeline_role.arn
 
   artifact_store {
@@ -75,7 +75,7 @@ resource "aws_s3_bucket" "artifact_bucket" {
 
 # Criação do papel IAM para a pipeline do CodePipeline
 resource "aws_iam_role" "codepipeline_role" {
-  name               = "my-codepipeline-role"
+  name               = "my-codepipeline-rolee"
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -94,12 +94,12 @@ EOF
 
 # Criação do repositório do CodeCommit
 resource "aws_codecommit_repository" "repo" {
-  repository_name = "my-repo"
+  repository_name = "my-repos"
 }
 
 # Criação do projeto do CodeBuild
 resource "aws_codebuild_project" "build_project" {
-  name       = "my-build-project"
+  name       = "my-build-projects"
   service_role = aws_iam_role.codebuild_role.arn
 
   source {
@@ -119,7 +119,7 @@ resource "aws_codebuild_project" "build_project" {
 
 # Criação do papel IAM para o CodeBuild
 resource "aws_iam_role" "codebuild_role" {
-  name               = "my-codebuild-role"
+  name               = "my-codebuild-rolee"
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
