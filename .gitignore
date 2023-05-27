@@ -1,0 +1,15 @@
+# Arquivos e diretórios específicos do Terraform
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+*.tfplan
+
+# Arquivos de autenticação e credenciais do Terraform
+*.pem
+*.pem.pub
+*.pub
+
+# Outros arquivos do Terraform
+.tfvars
+.tfstate.d/
+*.tfvars.json

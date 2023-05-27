@@ -1,7 +1,17 @@
+# Cria uma VPC
+resource "aws_vpc" "default" {
+  cidr_block = "10.0.0.0/16"
+  tags = {
+    Name = "Default VPC"
+  }
+}
+
 # Cria uma instância EC2
 resource "aws_instance" "web_instance" {
   ami           = var.ami_id  # ID da AMI
   instance_type = var.instance_type
+  security_groups = [aws_security_group.web_sg.name]
+  monitoring = true
   tags = {
     Name        = "WebInstance"
     Environment = var.environment
@@ -68,19 +78,4 @@ resource "aws_security_group" "web_sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-}
-
-# Associa o grupo de segurança à instância EC2
-resource "aws_instance" "web_instance" {
-  # ...
-
-  security_group_ids = [aws_security_group.web_sg.id]
-
-  # ...
-}
-
-# Ativa o monitoramento da instância EC2
-resource "aws_cloudwatch_instance" "web_instance" {
-  instance_id = aws_instance.web_instance.id
-  depends_on  = [aws_instance.web_instance]
 }
