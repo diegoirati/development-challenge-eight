@@ -1,7 +1,7 @@
-# Criação da pipeline do CodePipeline
+# Cria o pipeline do CodePipeline
 resource "aws_codepipeline" "pipeline" {
-  name     = "my-pipeline1"
-  role_arn = aws_iam_role.codepipeline_role.arn
+  name     = "my-pipeline"
+  role_arn = aws_iam_role.pipeline_role.arn
 
   artifact_store {
     location = aws_s3_bucket.artifact_bucket.bucket
@@ -15,13 +15,16 @@ resource "aws_codepipeline" "pipeline" {
       name            = "SourceAction"
       category        = "Source"
       owner           = "AWS"
-      provider        = "CodeCommit"
+      provider        = "CodeStarSourceConnection"
       version         = "1"
-      configuration   = {
-        RepositoryName = aws_codecommit_repository.repo.repository_name
-        BranchName     = var.source_branch
-      }
       output_artifacts = ["source_output"]
+
+      configuration = {
+        ConnectionArn         = aws_codestarconnections_connection.github_connection.arn
+        FullRepositoryId      = "diegoirati/development-challenge-eight"
+        BranchName            = "main"
+        PollForSourceChanges  = "true"
+      }
     }
   }
 
@@ -34,53 +37,29 @@ resource "aws_codepipeline" "pipeline" {
       owner           = "AWS"
       provider        = "CodeBuild"
       version         = "1"
-      input_artifacts  = ["source_output"]
-      output_artifacts = ["build_output"]
+      input_artifacts = ["source_output"]
 
       configuration = {
         ProjectName = aws_codebuild_project.build_project.name
       }
     }
   }
-
-  stage {
-    name = "Deploy"
-
-    action {
-      name            = "DeployAction"
-      category        = "Deploy"
-      owner           = "AWS"
-      provider        = "CloudFormation"
-      version         = "1"
-      input_artifacts = ["build_output"]
-
-      configuration = {
-        StackName    = var.stack_name
-        TemplatePath = "build_output::${var.stack_template}"
-        ActionMode   = "CREATE_UPDATE"
-        Capabilities = "CAPABILITY_NAMED_IAM"
-      }
-    }
-  }
 }
 
-# Criação do bucket S3 para armazenar os artefatos do pipeline
+# Cria um bucket do S3 para armazenar os artefatos
 resource "aws_s3_bucket" "artifact_bucket" {
-  bucket = "my-pipeline-artifacts2"
-
-  lifecycle {
-    prevent_destroy = true
-  }
+  bucket = "my-artifact-bucket"
 }
 
-# Criação do papel IAM para a pipeline do CodePipeline
-resource "aws_iam_role" "codepipeline_role" {
-  name               = "my-codepipeline-rolee"
+# Cria a função IAM para o pipeline do CodePipeline
+resource "aws_iam_role" "pipeline_role" {
+  name               = "my-pipeline-role"
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "",
       "Effect": "Allow",
       "Principal": {
         "Service": "codepipeline.amazonaws.com"
@@ -92,39 +71,15 @@ resource "aws_iam_role" "codepipeline_role" {
 EOF
 }
 
-# Criação do repositório do CodeCommit
-resource "aws_codecommit_repository" "repo" {
-  repository_name = "my-repos"
-}
-
-# Criação do projeto do CodeBuild
-resource "aws_codebuild_project" "build_project" {
-  name       = "my-build-projects"
-  service_role = aws_iam_role.codebuild_role.arn
-
-  source {
-    type = "CODEPIPELINE"
-  }
-
-  artifacts {
-    type = "CODEPIPELINE"
-  }
-
-  environment {
-    compute_type = "BUILD_GENERAL1_SMALL"
-    image        = "aws/codebuild/amazonlinux2-x86_64-standard:3.0"
-    type         = "LINUX_CONTAINER"
-  }
-}
-
-# Criação do papel IAM para o CodeBuild
-resource "aws_iam_role" "codebuild_role" {
-  name               = "my-codebuild-rolee"
+# Cria a função IAM para o projeto do CodeBuild
+resource "aws_iam_role" "build_role" {
+  name               = "my-build-role"
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "",
       "Effect": "Allow",
       "Principal": {
         "Service": "codebuild.amazonaws.com"
@@ -134,4 +89,85 @@ resource "aws_iam_role" "codebuild_role" {
   ]
 }
 EOF
+}
+
+# Cria a política IAM para o projeto do CodeBuild
+resource "aws_iam_policy" "build_policy" {
+  name   = "my-build-policy"
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:GetObjectVersion",
+        "s3:PutObject"
+      ],
+      "Resource": "arn:aws:s3:::my-artifact-bucket/*"
+    }
+  ]
+}
+EOF
+}
+
+# Anexa a política ao papel do projeto do CodeBuild
+resource "aws_iam_role_policy_attachment" "build_policy_attachment" {
+  role       = aws_iam_role.build_role.name
+  policy_arn = aws_iam_policy.build_policy.arn
+}
+
+# Cria o projeto do CodeBuild
+resource "aws_codebuild_project" "build_project" {
+  name = "my-build-project"
+
+  source {
+    type            = "NO_SOURCE"
+    buildspec       = "buildspec.yml"
+    report_build_status = true
+  }
+
+  artifacts {
+    type = "NO_ARTIFACTS"
+  }
+
+  environment {
+    compute_type = "BUILD_GENERAL1_SMALL"
+    image        = "aws/codebuild/amazonlinux2-x86_64-standard:3.0"
+    type         = "LINUX_CONTAINER"
+  }
+
+  service_role = aws_iam_role.build_role.arn
+}
+
+# Cria o arquivo buildspec.yml para o projeto do CodeBuild
+resource "aws_s3_object" "buildspec_object" {
+  bucket = aws_s3_bucket.artifact_bucket.bucket
+  key    = "buildspec.yml"
+  content = <<EOF
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.8
+  build:
+    commands:
+      - echo "Building..."
+  post_build:
+    commands:
+      - echo "Post Build..."
+EOF
+}
+
+# Gera a saída com o ARN da conexão do GitHub
+output "github_connection_arn" {
+  value = aws_codestarconnections_connection.github_connection.arn
+}
+
+# Cria a conexão do CodeStar com o GitHub
+resource "aws_codestarconnections_connection" "github_connection" {
+  name              = "my-github-connection"
+  host_arn          = "arn:aws:codestar-connections:us-east-2:991123363781:connection/8791e600-0a4a-4e81-9cd6-10e9d6c77f53"
 }

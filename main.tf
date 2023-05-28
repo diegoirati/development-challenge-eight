@@ -6,12 +6,48 @@ resource "aws_vpc" "default" {
   }
 }
 
+# Cria uma sub-rede
+resource "aws_subnet" "default" {
+  vpc_id                  = aws_vpc.default.id
+  cidr_block              = "10.0.0.0/24"
+  availability_zone       = "us-east-2a"
+}
+
+# Cria as regras de segurança do grupo de segurança
+resource "aws_security_group" "web_sg" {
+  name        = "web-sg"
+  description = "Security group for web application"
+  vpc_id      = aws_vpc.default.id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# Cria um grupo de logs do CloudWatch
+resource "aws_cloudwatch_log_group" "web_logs" {
+  name = "/ecs/web-logs"
+  retention_in_days = 30
+}
+
 # Cria uma instância EC2
 resource "aws_instance" "web_instance" {
   ami           = var.ami_id  # ID da AMI
   instance_type = var.instance_type
-  security_groups = [aws_security_group.web_sg.name]
-  monitoring = true
+  associate_public_ip_address = true
+  vpc_security_group_ids = [aws_security_group.web_sg.id]  # Usar o ID do grupo de segurança
+  subnet_id     = aws_subnet.default.id  # Usar o ID da sub-rede
+  monitoring    = true
   tags = {
     Name        = "WebInstance"
     Environment = var.environment
@@ -23,6 +59,10 @@ resource "aws_instance" "web_instance" {
     sudo apt install -y docker.io
     sudo systemctl start docker
 
+    # Configura o agente do CloudWatch Logs
+    sudo curl https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py -O
+    sudo python3 awslogs-agent-setup.py -n -r ${var.aws_region} -c s3://aws-codedeploy-${var.aws_region}/awscli.conf
+
     # Clona o repositório que contém o Dockerfile
     git clone https://github.com/diegoirati/development-challenge-eight app
 
@@ -32,8 +72,8 @@ resource "aws_instance" "web_instance" {
     # Constrói a imagem a partir do Dockerfile
     sudo docker build -t webapp .
 
-    # Executa o contêiner
-    sudo docker run -d -p 80:80 webapp
+    # Executa o contêiner e direciona os logs para o CloudWatch Logs
+    sudo docker run -d -p 80:80 --log-driver=awslogs --log-opt awslogs-group=${aws_cloudwatch_log_group.web_logs.name} --log-opt awslogs-region=${var.aws_region} webapp
   EOF
 }
 
@@ -64,18 +104,4 @@ resource "aws_sns_topic_subscription" "notification_subscription" {
   topic_arn = aws_sns_topic.notification_topic.arn
   protocol  = "email"
   endpoint  = var.sns_email_endpoint
-}
-
-# Cria as regras de segurança do grupo de segurança
-resource "aws_security_group" "web_sg" {
-  name        = "web-sg"
-  description = "Security group for web application"
-  vpc_id      = aws_vpc.default.id
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 }

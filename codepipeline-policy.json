@@ -1,0 +1,112 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowCodeCommitAccess",
+        "Effect": "Allow",
+        "Action": [
+          "codecommit:Get*",
+          "codecommit:List*",
+          "codecommit:GitPull",
+          "codecommit:UploadArchive",
+          "codecommit:CancelUploadArchive",
+          "codecommit:CancelUploadArchive",
+          "codecommit:UploadArchive",
+          "codecommit:CancelUploadArchive",
+          "codecommit:CreateBranch",
+          "codecommit:CreateRepository",
+          "codecommit:DeleteBranch",
+          "codecommit:DeleteRepository",
+          "codecommit:GitPush",
+          "codecommit:PutFile",
+          "codecommit:BatchGetRepositories",
+          "codecommit:TestRepositoryTriggers",
+          "codecommit:DeleteFile",
+          "codecommit:MergePullRequestByFastForward",
+          "codecommit:PutRepositoryTriggers",
+          "codecommit:CreatePullRequest",
+          "codecommit:MergePullRequestBySquash",
+          "codecommit:MergePullRequestByThreeWay",
+          "codecommit:PostCommentForComparedCommit",
+          "codecommit:PostCommentForPullRequest",
+          "codecommit:PostCommentReply",
+          "codecommit:UpdateComment",
+          "codecommit:UpdateDefaultBranch",
+          "codecommit:CreateBranch",
+          "codecommit:CreateRepository",
+          "codecommit:DeleteBranch",
+          "codecommit:DeleteRepository",
+          "codecommit:GitPush",
+          "codecommit:PutFile",
+          "codecommit:BatchGetRepositories",
+          "codecommit:TestRepositoryTriggers",
+          "codecommit:DeleteFile",
+          "codecommit:MergePullRequestByFastForward",
+          "codecommit:PutRepositoryTriggers",
+          "codecommit:CreatePullRequest",
+          "codecommit:MergePullRequestBySquash",
+          "codecommit:MergePullRequestByThreeWay",
+          "codecommit:PostCommentForComparedCommit",
+          "codecommit:PostCommentForPullRequest",
+          "codecommit:PostCommentReply",
+          "codecommit:UpdateComment",
+          "codecommit:UpdateDefaultBranch"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Sid": "AllowS3Access",
+        "Effect": "Allow",
+        "Action": [
+          "s3:Get*",
+          "s3:List*",
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:DeleteObject"
+        ],
+        "Resource": "arn:aws:s3:::my-pipeline-artifacts/*"
+      },
+      {
+        "Sid": "AllowCodeBuildAccess",
+        "Effect": "Allow",
+        "Action": [
+          "codebuild:BatchGetBuilds",
+          "codebuild:StartBuild",
+          "codebuild:StopBuild",
+          "codebuild:ListBuilds"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Sid": "AllowCloudFormationAccess",
+        "Effect": "Allow",
+        "Action": [
+          "cloudformation:CreateStack",
+          "cloudformation:DeleteStack",
+          "cloudformation:DescribeStacks",
+          "cloudformation:UpdateStack",
+          "cloudformation:ListStacks",
+          "cloudformation:ValidateTemplate",
+          "cloudformation:GetTemplateSummary",
+          "cloudformation:DescribeChangeSet",
+          "cloudformation:ExecuteChangeSet",
+          "cloudformation:CreateChangeSet"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Sid": "AllowIAMAccess",
+        "Effect": "Allow",
+        "Action": [
+          "iam:PassRole",
+          "iam:GetRole",
+          "iam:CreateRole",
+          "iam:DeleteRole",
+          "iam:PutRolePolicy",
+          "iam:DeleteRolePolicy"
+        ],
+        "Resource": "*"
+      }
+    ]
+  }
+  

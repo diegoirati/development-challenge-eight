@@ -59,3 +59,15 @@ variable "stack_template" {
   default     = "test1"
 }
 
+# Declaração das variáveis
+variable "repo_name" {
+  type        = string
+  description = "Nome do repositório do CodeCommit"
+  default = "repo"
+}
+
+variable "github_token" {
+  description = "Token de acesso pessoal do GitHub"
+  type        = string
+  default     = "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"
+}
